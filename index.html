@@ -169,12 +169,11 @@
             const p_h = parseFloat(document.getElementById('panel_h').value);
             const stock_qty = parseInt(document.getElementById('panel_qty').value) || 1;
 
-            if (!p_w || !p_h) { alert('Ingresa dimensiones del panel stock'); return; }
+                alert('❌ Error: Ingresa dimensiones válidas para el panel de stock.'); 
+                return; 
+            }
 
-            // Algoritmo MaxRects / Shelf simple pero corregido (First Fit Decreasing Height)
-            // Ordenar por altura descendente para mejor empaquetado vertical
             const sortedPieces = [...pieces].sort((a, b) => b.h - a.h);
-            
             const panelsUsed = [];
             let currentPieces = [...sortedPieces];
 
@@ -183,38 +182,53 @@
                 let shelf_y = 0;
                 let shelf_h = 0;
                 let shelf_x = 0;
-                
                 let remaining = [];
                 
                 for(let piece of currentPieces) {
-                    // Intentar rotar si ayuda (no implementado por simplicidad, se queda con W x H original)
-                    if (piece.w > panel.w || piece.h > panel.h) {
-                        alert(`La pieza ${piece.nombre} es más grande que el panel.`);
-                        return;
+                    let pw = piece.w;
+                    let ph = piece.h;
+                    let rotated = false;
+
+                    const fitsOriginal = (pw <= panel.w && ph <= panel.h);
+                    const fitsRotated = (ph <= panel.w && pw <= panel.h);
+
+                        console.error();
+                        continue;
                     }
 
-                    // Si no cabe en el shelf actual horizontalmente
-                    if (shelf_x + piece.w > panel.w) {
-                        shelf_y += shelf_h; // Saltar a siguiente shelf
+                    // Rotación automática para mejor ajuste
+                        [pw, ph] = [ph, pw];
+                        rotated = true;
+                    } else if (fitsOriginal && fitsRotated && ph > pw) {
+                        // Orientar para que la altura sea la dimension menor (mejor para estantes)
+                        [pw, ph] = [ph, pw];
+                        rotated = true;
+                    }
+
+                    if (shelf_x + pw > panel.w) {
+                        shelf_y += shelf_h;
                         shelf_x = 0;
                         shelf_h = 0;
                     }
 
-                    // Si cabe verticalmente
-                    if (shelf_y + piece.h <= panel.h) {
+                    if (shelf_y + ph <= panel.h) {
                         panel.layouts.push({
-                            x: shelf_x, y: shelf_y, w: piece.w, h: piece.h, nombre: piece.nombre
+                            x: shelf_x, y: shelf_y, w: pw, h: ph, 
+                            nombre: piece.nombre + (rotated ? ' (R)' : '')
                         });
-                        shelf_x += piece.w;
-                        shelf_h = Math.max(shelf_h, piece.h);
+                        shelf_x += pw;
+                        shelf_h = Math.max(shelf_h, ph);
                     } else {
                         remaining.push(piece);
                     }
                 }
                 panelsUsed.push(panel);
                 currentPieces = remaining;
+                
+                if (currentPieces.length > 0 && panelsUsed.length >= stock_qty) {
+                    alert('⚠️ Límite de stock alcanzado. Algunas piezas no pudieron ser colocadas.');
+                }
             }
-
             renderResults(panelsUsed, p_w, p_h);
         }
 
