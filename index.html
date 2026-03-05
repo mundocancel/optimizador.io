@@ -172,7 +172,7 @@
             const p_h = parseFloat(document.getElementById('panel_h').value);
             const stock_qty = parseInt(document.getElementById('panel_qty').value) || 1;
             const kerf = parseFloat(document.getElementById('kerf').value) || 0;
-
+        if (!p_w || !p_h || isNaN(p_w) || isNaN(p_h)) {
                 alert('❌ Error: Ingresa dimensiones válidas para el panel de stock.'); 
                 return; 
             }
