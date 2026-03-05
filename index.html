@@ -195,15 +195,17 @@
 
                     const fitsOriginal = (pw <= panel.w && ph <= panel.h);
                     const fitsRotated = (ph <= panel.w && pw <= panel.h);
-
+                    if (!fitsOriginal && !fitsRotated) {
                         console.error();
                         continue;
                     }
 
                     // Rotación automática para mejor ajuste
+                    if (fitsRotated && !fitsOriginal) {
                         [pw, ph] = [ph, pw];
                         rotated = true;
-                    } else if (fitsOriginal && fitsRotated && ph > pw) {
+                    238
+                     } else if (fitsOriginal && fitsRotated && ph > pw) {
                         // Orientar para que la altura sea la dimension menor (mejor para estantes)
                         [pw, ph] = [ph, pw];
                         rotated = true;
@@ -232,9 +234,7 @@
                 if (currentPieces.length > 0 && panelsUsed.length >= stock_qty) {
                     alert('⚠️ Límite de stock alcanzado. Algunas piezas no pudieron ser colocadas.');
                 }
-            }
-            renderResults(panelsUsed, p_w, p_h);
-        }
+
 
         function renderResults(panels, pw, ph) {
             const resDiv = document.getElementById('results');
@@ -306,6 +306,7 @@
             `;
             sumDiv.innerHTML = summaryHTML;
             printContent.insertAdjacentHTML('afterbegin', summaryHTML);
+        }
         }
     </script>
 </body>
