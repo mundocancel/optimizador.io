@@ -49,7 +49,10 @@
         <h1>📐 Optimizador de Cortes</h1>
         
         <div class="panel-stock">
-            <h3>📦 Paneles Disponibles (Stock)</h3>
+            <h3>📦 Configuración y Stock</h3>
+            <label class="label-full">Grosor de corte / Merma (Kerf mm):
+                <input type="number" id="kerf" value="0" class="input-full" step="0.1">
+            </label>
             <label class="label-full">Panel estándar:
                 <select id="panel_preset" onchange="applyPreset()" class="input-full">
                     <option value="">— Seleccionar panel estándar —</option>
@@ -168,6 +171,7 @@
             const p_w = parseFloat(document.getElementById('panel_w').value);
             const p_h = parseFloat(document.getElementById('panel_h').value);
             const stock_qty = parseInt(document.getElementById('panel_qty').value) || 1;
+            const kerf = parseFloat(document.getElementById('kerf').value) || 0;
 
                 alert('❌ Error: Ingresa dimensiones válidas para el panel de stock.'); 
                 return; 
@@ -205,18 +209,18 @@
                         rotated = true;
                     }
 
-                    if (shelf_x + pw > panel.w) {
-                        shelf_y += shelf_h;
+                    if (shelf_x + pw + kerf > panel.w) {
+                        shelf_y += shelf_h + kerf;
                         shelf_x = 0;
                         shelf_h = 0;
                     }
 
-                    if (shelf_y + ph <= panel.h) {
+                    if (shelf_y + ph + kerf <= panel.h) {
                         panel.layouts.push({
                             x: shelf_x, y: shelf_y, w: pw, h: ph, 
                             nombre: piece.nombre + (rotated ? ' (R)' : '')
                         });
-                        shelf_x += pw;
+                        shelf_x += pw + kerf;
                         shelf_h = Math.max(shelf_h, ph);
                     } else {
                         remaining.push(piece);
