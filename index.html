@@ -1,194 +1,293 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <title>🪟 Optimizador Ventanerías Aluminio & Vidrio Templado</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Optimizador Ventanerías Aluminio & Vidrio Templado</title>
     <style>
         * { box-sizing: border-box; }
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            max-width: 1200px; margin: 0 auto; padding: 20px; 
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px; margin: 0 auto; padding: 20px;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
         }
-        .container { background: rgba(255,255,255,0.1); padding: 30px; border-radius: 20px; backdrop-filter: blur(10px); }
-        input, select { padding: 12px; margin: 5px; border: none; border-radius: 8px; width: 120px; }
-        button { 
-            padding: 12px 24px; background: #10b981; color: white; 
-            border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
-            transition: all 0.3s;
+        .container { background: rgba(255,255,255,0.1); padding: 25px; border-radius: 15px; backdrop-filter: blur(10px); }
+        input, select { padding: 12px; margin: 5px; border: none; border-radius: 8px; width: calc(50% - 15px); }
+        button {
+            padding: 12px 24px; margin: 10px 5px; border: none; border-radius: 8px;
+            cursor: pointer; transition: all 0.3s; font-weight: bold;
         }
-        button:hover { background: #059669; transform: scale(1.05); }
-        canvas { 
-            border: 2px solid #fff; border-radius: 12px; 
-            background: #f8fafc; margin: 20px 0; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        .btn-add { background: #48bb78; color: white; width: 100%; font-size: 1.1em; }
+        .btn-optimize { background: #38a169; color: white; width: 100%; font-size: 1.2em; margin-top: 20px; }
+        .btn-clear { background: #f56565; color: white; }
+        .btn-print { background: #4299e1; color: white; margin-top: 10px; width: 100%; }
+        canvas {
+            border: 2px solid #fff; border-radius: 12px;
+            background: #f8fafc; margin: 20px 0; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1);
+            max-width: 100%; height: auto;
         }
-        .result { background: rgba(16,185,129,0.2); padding: 20px; border-radius: 12px; margin: 20px 0; }
-        .piezas-lista { background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; max-height: 200px; overflow-y: auto; }
-        @media (max-width: 768px) { input { width: 100%; margin: 5px 0; } }
+        .result { background: rgba(16,185,129,0.2); padding: 20px; border-radius: 12px; margin-top: 20px; }
+        .piezas-lista { background: rgba(255,255,255,0.1); padding: 10px; border-radius: 8px; margin-top: 10px; }
+        .item-pieza { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.2); padding: 8px 0; }
+        .remove-btn { background: #f56565; padding: 5px 10px; font-size: 0.8em; }
+        @media print {
+            body { background: white; color: black; padding: 0; }
+            .container, .btn-add, .btn-optimize, .btn-clear, .btn-print, input, select, label { display: none; }
+            .print-section { display: block !important; }
+            canvas { border: 1px solid #000; page-break-inside: avoid; }
+            .result { background: none; color: black; border: 1px solid #ccc; }
+        }
+        .print-section { display: none; }
+        .label-full { display: block; margin-top: 10px; width: 100%; }
+        .input-full { width: 100%; }
+        .input-inline { width: calc(33% - 15px); }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>🪟 <strong>Optimizador Ventanerías</strong></h1>
-        <p>Aluminio + Vidrio Templado | Demo educativa GitHub Pages | <em>Proyecto master en camino...</em></p>
+        <h1>📐 Optimizador de Cortes</h1>
         
-        <div>
-            <h3>📏 Panel base</h3>
-            <label>Ancho (mm): <input id="panel_w" value="2440" type="number"></label>
-            <label>Alto (mm): <input id="panel_h" value="1220" type="number"></label>
+        <div class="panel-stock">
+            <h3>📦 Paneles Disponibles (Stock)</h3>
+            <label class="label-full">Panel estándar:
+                <select id="panel_preset" onchange="applyPreset()" class="input-full">
+                    <option value="">— Seleccionar panel estándar —</option>
+                    <option value="Panel 3.60x2.60|3600|2600">Panel 3.60×2.60 m</option>
+                    <option value="Panel 2.14x3.66|2140|3660">Panel 2.14×3.66 m</option>
+                    <option value="Panel 2.60x1.80|2600|1800">Panel 2.60×1.80 m</option>
+                </select>
+            </label>
+            <input type="text" id="panel_name" placeholder="Nombre (ej. Vidrio Claro)" class="input-inline">
+            <input type="number" id="panel_w" placeholder="Ancho mm" class="input-inline">
+            <input type="number" id="panel_h" placeholder="Alto mm" class="input-inline">
+            <label class="label-full">Cantidad de paneles en stock:
+                <input type="number" id="panel_qty" value="10" class="input-full">
+            </label>
         </div>
-        
-        <div>
-            <h3>🔧 Piezas a cortar</h3>
-            <div>
-                <label>Nombre: <input id="piece_name" value="Marco"></label>
-                <label>Ancho: <input id="piece_w" value="600" type="number"></label>
-                <label>Alto: <input id="piece_h" value="400" type="number"></label>
-                <button onclick="addPiece()">➕ Agregar pieza</button>
-            </div>
-            <div id="piezas_lista" class="piezas-lista"></div>
-            <button onclick="clearPieces()" style="background: #ef4444;">🗑️ Limpiar</button>
+
+        <hr style="margin: 20px 0; border: 0; border-top: 1px solid rgba(255,255,255,0.3);">
+
+        <div class="piece-input">
+            <h3>✂️ Piezas a Cortar</h3>
+            <input type="text" id="piece_name" placeholder="Nombre pieza (ej. Ventana A)" class="input-inline">
+            <input type="number" id="piece_w" placeholder="Ancho mm" class="input-inline">
+            <input type="number" id="piece_h" placeholder="Alto mm" class="input-inline">
+            <label class="label-full">Cantidad de piezas:
+                <input type="number" id="piece_qty" value="1" class="input-full">
+            </label>
+            <button onclick="addPiece()" class="btn-add">➕ Agregar a la Lista</button>
         </div>
+
+        <div id="lista" class="piezas-lista"></div>
         
-        <button onclick="optimizar()" style="font-size: 18px; padding: 15px 40px; width: 100%;">
-            🧮 OPTIMIZAR CORTES
-        </button>
-        
-        <div id="resultado" class="result" style="display:none;"></div>
-        <canvas id="canvas" width="800" height="400" style="display:none;"></canvas>
-        
-        <div style="margin-top: 40px; text-align: center; font-size: 14px;">
-            <p>💡 <strong>Próximamente:</strong> Aluminio lineal • Cotizador • PDF • API Rust ⚡</p>
-            <p>Made by Yaotzin Plascencia | Guadalajara, Jalisco</p>
+        <button onclick="clearAll()" class="btn-clear">🗑️ Limpiar Todo</button>
+        <button onclick="optimize()" class="btn-optimize">🚀 OPTIMIZAR CORTES</button>
+        <button onclick="window.print()" class="btn-print">🖨️ IMPRIMIR RESULTADOS</button>
+
+        <div id="results" class="result" style="display:none;">
+            <h2>✅ Optimización Finalizada</h2>
+            <div id="summary"></div>
+            <div id="canvases"></div>
         </div>
+    </div>
+
+    <div id="print_area" class="print-section">
+        <h1>Reporte de Optimización de Cortes</h1>
+        <div id="print_content"></div>
     </div>
 
     <script>
         let pieces = [];
-        
+        const PIXELS_PER_MM = 0.15; // Ajuste visual
+
+        function applyPreset() {
+            const sel = document.getElementById('panel_preset');
+            if (!sel.value) return;
+            const p = sel.value.split('|');
+            document.getElementById('panel_name').value = p[0];
+            document.getElementById('panel_w').value = p[1];
+            document.getElementById('panel_h').value = p[2];
+        }
+
         function addPiece() {
             const name = document.getElementById('piece_name').value || 'Pieza';
             const w = parseFloat(document.getElementById('piece_w').value);
             const h = parseFloat(document.getElementById('piece_h').value);
-            
+            const qty = parseInt(document.getElementById('piece_qty').value) || 1;
+
             if (w > 0 && h > 0) {
-                pieces.push({nombre: name, ancho: w, alto: h});
+                for(let i=0; i<qty; i++) {
+                    pieces.push({ nombre: name, w, h, id: Date.now() + Math.random() });
+                }
                 updateLista();
-                document.getElementById('piece_name').value = '';
                 document.getElementById('piece_w').value = '';
                 document.getElementById('piece_h').value = '';
+                document.getElementById('piece_qty').value = '1';
             }
         }
-        
+
         function updateLista() {
-            const lista = document.getElementById('piezas_lista');
-            lista.innerHTML = pieces.map((p, i) => 
-                `<div>${p.nombre}: ${p.ancho}x${p.alto}mm <button onclick="removePiece(${i})" style="background:#ef4444;font-size:12px;padding:2px 6px;">X</button></div>`
-            ).join('');
+            const div = document.getElementById('lista');
+            div.innerHTML = pieces.length ? '<h4>Piezas en cola:</h4>' : '';
+            
+            // Agrupar por nombre y dimensiones para mostrar
+            const grouped = {};
+            pieces.forEach(p => {
+                const key = `${p.nombre} (${p.w}x${p.h})`;
+                if(!grouped[key]) grouped[key] = { ...p, count: 0 };
+                grouped[key].count++;
+            });
+
+            Object.values(grouped).forEach(p => {
+                const item = document.createElement('div');
+                item.className = 'item-pieza';
+                item.innerHTML = `
+                    <span>${p.nombre}: <b>${p.w} x ${p.h} mm</b> (x${p.count})</span>
+                    <button class="remove-btn" onclick="removePiece('${p.nombre}', ${p.w}, ${p.h})">Eliminar</button>
+                `;
+                div.appendChild(item);
+            });
         }
-        
-        function removePiece(index) {
-            pieces.splice(index, 1);
+
+        function removePiece(name, w, h) {
+            const idx = pieces.findIndex(p => p.nombre === name && p.w === w && p.h === h);
+            if(idx > -1) pieces.splice(idx, 1);
             updateLista();
         }
-        
-        function clearPieces() {
+
+        function clearAll() {
             pieces = [];
             updateLista();
+            document.getElementById('results').style.display = 'none';
         }
-        
-        function optimizar() {
-            if (pieces.length === 0) {
-                alert('Agrega al menos 1 pieza');
-                return;
-            }
+
+        function optimize() {
+            if (pieces.length === 0) return;
             
-            const panel_w = parseFloat(document.getElementById('panel_w').value);
-            const panel_h = parseFloat(document.getElementById('panel_h').value);
+            const p_w = parseFloat(document.getElementById('panel_w').value);
+            const p_h = parseFloat(document.getElementById('panel_h').value);
+            const stock_qty = parseInt(document.getElementById('panel_qty').value) || 1;
+
+            if (!p_w || !p_h) { alert('Ingresa dimensiones del panel stock'); return; }
+
+            // Algoritmo MaxRects / Shelf simple pero corregido (First Fit Decreasing Height)
+            // Ordenar por altura descendente para mejor empaquetado vertical
+            const sortedPieces = [...pieces].sort((a, b) => b.h - a.h);
             
-            // Algoritmo Guillotine simple (orden grande→pequeño)
-            pieces.sort((a,b) => (b.ancho*b.alto) - (a.ancho*a.alto));
-            
-            let layouts = [];
-            let current_x = 5, current_y = 5; // Margen sierra
-            let total_area = 0;
-            
-            pieces.forEach(p => {
-                // Intenta colocar (simplificado)
-                if (current_x + p.ancho <= panel_w) {
-                    layouts.push({
-                        nombre: p.nombre,
-                        x: current_x,
-                        y: current_y,
-                        w: p.ancho,
-                        h: p.alto
-                    });
-                    current_x += p.ancho + 5;
-                    total_area += p.ancho * p.alto;
-                } else {
-                    current_x = 5;
-                    current_y += 50; // Nueva fila aproximada
-                    layouts.push({
-                        nombre: p.nombre + ' (fila2)',
-                        x: current_x,
-                        y: current_y,
-                        w: p.ancho,
-                        h: p.alto
-                    });
-                    current_x += p.ancho + 5;
-                    total_area += p.ancho * p.alto;
+            const panelsUsed = [];
+            let currentPieces = [...sortedPieces];
+
+            while(currentPieces.length > 0 && panelsUsed.length < stock_qty) {
+                const panel = { w: p_w, h: p_h, layouts: [] };
+                let shelf_y = 0;
+                let shelf_h = 0;
+                let shelf_x = 0;
+                
+                let remaining = [];
+                
+                for(let piece of currentPieces) {
+                    // Intentar rotar si ayuda (no implementado por simplicidad, se queda con W x H original)
+                    if (piece.w > panel.w || piece.h > panel.h) {
+                        alert(`La pieza ${piece.nombre} es más grande que el panel.`);
+                        return;
+                    }
+
+                    // Si no cabe en el shelf actual horizontalmente
+                    if (shelf_x + piece.w > panel.w) {
+                        shelf_y += shelf_h; // Saltar a siguiente shelf
+                        shelf_x = 0;
+                        shelf_h = 0;
+                    }
+
+                    // Si cabe verticalmente
+                    if (shelf_y + piece.h <= panel.h) {
+                        panel.layouts.push({
+                            x: shelf_x, y: shelf_y, w: piece.w, h: piece.h, nombre: piece.nombre
+                        });
+                        shelf_x += piece.w;
+                        shelf_h = Math.max(shelf_h, piece.h);
+                    } else {
+                        remaining.push(piece);
+                    }
                 }
-            });
-            
-            const eficiencia = Math.min((total_area / (panel_w * panel_h)) * 100, 100);
-            const paneles_usados = Math.ceil(current_y / panel_h) || 1;
-            
-            // Mostrar resultado
-            document.getElementById('resultado').innerHTML = `
-                <h2>✅ <strong>Optimización completa</strong></h2>
-                <p><strong>Eficiencia:</strong> ${eficiencia.toFixed(1)}%</p>
-                <p><strong>Paneles usados:</strong> ${paneles_usados}</p>
-                <p><strong>Piezas optimizadas:</strong> ${layouts.length}/${pieces.length}</p>
-                <details>
-                    <summary>📋 Lista detallada</summary>
-                    ${layouts.map(l => `<div>${l.nombre}: X${l.x} Y${l.y} ${l.w}x${l.h}mm</div>`).join('')}
-                </details>
-            `;
-            document.getElementById('resultado').style.display = 'block';
-            document.getElementById('canvas').style.display = 'block';
-            
-            // Canvas visual
-            dibujarCanvas(panel_w, panel_h, layouts);
+                panelsUsed.push(panel);
+                currentPieces = remaining;
+            }
+
+            renderResults(panelsUsed, p_w, p_h);
         }
-        
-        function dibujarCanvas(panel_w, panel_h, layouts) {
-            const canvas = document.getElementById('canvas');
-            const ctx = canvas.getContext('2d');
-            const scale = Math.min(800 / panel_w, 400 / panel_h);
+
+        function renderResults(panels, pw, ph) {
+            const resDiv = document.getElementById('results');
+            const canvDiv = document.getElementById('canvases');
+            const sumDiv = document.getElementById('summary');
+            const printContent = document.getElementById('print_content');
             
-            canvas.width = panel_w * scale;
-            canvas.height = panel_h * scale;
-            
-            // Fondo panel
-            ctx.fillStyle = '#f1f5f9';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.strokeStyle = '#64748b';
-            ctx.lineWidth = 2;
-            ctx.strokeRect(1, 1, canvas.width-2, canvas.height-2);
-            
-            // Piezas
-            layouts.forEach(layout => {
-                ctx.fillStyle = `hsl(${Math.random()*360}, 70%, 60%)`;
-                ctx.fillRect(layout.x * scale, layout.y * scale, layout.w * scale, layout.h * scale);
-                ctx.strokeStyle = '#1e293b';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(layout.x * scale, layout.y * scale, layout.w * scale, layout.h * scale);
-                ctx.fillStyle = 'black';
-                ctx.font = `${12*scale}px Arial`;
-                ctx.fillText(layout.nombre, (layout.x+2) * scale, (layout.y+15) * scale);
+            resDiv.style.display = 'block';
+            canvDiv.innerHTML = '';
+            printContent.innerHTML = '';
+
+            const totalArea = pw * ph * panels.length;
+            let usedArea = 0;
+            let totalPieces = 0;
+
+            panels.forEach((panel, i) => {
+                const container = document.createElement('div');
+                container.innerHTML = `<h3>Panel ${i+1} (${pw}x${ph} mm)</h3>`;
+                
+                const canvas = document.createElement('canvas');
+                const scale = Math.min(800 / pw, 500 / ph);
+                canvas.width = pw * scale;
+                canvas.height = ph * scale;
+                const ctx = canvas.getContext('2d');
+
+                // Fondo
+                ctx.fillStyle = '#f1f5f9';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                panel.layouts.forEach(l => {
+                    usedArea += l.w * l.h;
+                    totalPieces++;
+                    
+                    // Rectángulo de pieza
+                    ctx.fillStyle = `hsla(${Math.random() * 360}, 70%, 60%, 0.8)`;
+                    ctx.fillRect(l.x * scale, l.y * scale, l.w * scale, l.h * scale);
+                    
+                    // Bordes
+                    ctx.strokeStyle = '#334155';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(l.x * scale, l.y * scale, l.w * scale, l.h * scale);
+
+                    // Nombre y medidas
+                    ctx.fillStyle = 'black';
+                    const fontSize = Math.max(10, 12 * scale / 0.15);
+                    ctx.font = `bold ${fontSize}px Arial`;
+                    ctx.fillText(l.nombre, l.x * scale + 5, l.y * scale + fontSize);
+                    ctx.font = `${fontSize * 0.8}px Arial`;
+                    ctx.fillText(`${l.w}x${l.h}`, l.x * scale + 5, l.y * scale + fontSize * 2);
+                });
+
+                canvDiv.appendChild(container);
+                canvDiv.appendChild(canvas);
+                
+                // Clonar para impresión
+                const printContainer = container.cloneNode(true);
+                const printCanvas = document.createElement('canvas');
+                printCanvas.width = canvas.width; printCanvas.height = canvas.height;
+                printCanvas.getContext('2d').drawImage(canvas, 0, 0);
+                printContent.appendChild(printContainer);
+                printContent.appendChild(printCanvas);
             });
+
+            const eficiencia = ((usedArea / (pw * ph * panels.length)) * 100).toFixed(1);
+            const summaryHTML = `
+                <p>📊 Eficiencia: <b>${eficiencia}%</b></p>
+                <p>📦 Paneles usados: <b>${panels.length}</b></p>
+                <p>🧩 Piezas optimizadas: <b>${totalPieces} / ${pieces.length}</b></p>
+            `;
+            sumDiv.innerHTML = summaryHTML;
+            printContent.insertAdjacentHTML('afterbegin', summaryHTML);
         }
     </script>
 </body>
